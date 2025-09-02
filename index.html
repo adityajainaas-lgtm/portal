@@ -1,245 +1,706 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Meesho Profit Tracker</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Meesho + Local — Sales & Profit Platform</title>
+
+  <!-- Tailwind Play CDN for quick styling (production: build Tailwind yourself) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Chart.js for charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0; padding: 0;
-      background: #f9f9f9;
-      color: #333;
-    }
-    .container {
-      max-width: 500px;
-      margin: auto;
-      padding: 16px;
-    }
-    h1 {
-      text-align: center;
-      font-size: 20px;
-      margin-bottom: 10px;
-    }
-    .card {
-      background: #fff;
-      padding: 16px;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      margin-bottom: 16px;
-    }
-    label {
-      font-size: 14px;
-      display: block;
-      margin-top: 8px;
-    }
-    input, select, button {
-      width: 100%;
-      padding: 10px;
-      font-size: 14px;
-      margin-top: 4px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-    button {
-      background: #6200ea;
-      color: #fff;
-      border: none;
-      cursor: pointer;
-      margin-top: 12px;
-    }
-    button:hover {
-      background: #4500b5;
-    }
-    .hidden { display: none; }
-    .history {
-      font-size: 14px;
-      line-height: 1.4;
-    }
-    .logout {
-      background: #d32f2f;
-      margin-top: 8px;
-    }
+    /* Minor visual tweaks */
+    body { background: linear-gradient(180deg,#041021,#071829); color: #e6eef6; }
+    .glass { background: rgba(6,10,18,0.6); backdrop-filter: blur(6px); }
+    .muted { color: #9aa6b2; }
+    .card-scroll { max-height: 420px; overflow:auto; }
+    /* mobile optimization helpers */
+    @media(min-width:1024px){ .lg-grid{ display:grid; grid-template-columns: 520px 1fr; gap:18px;} }
   </style>
 </head>
-<body>
-  <div class="container">
-    <h1>Meesho Profit Tracker</h1>
+<body class="min-h-screen p-4">
+  <div class="max-w-5xl mx-auto">
 
-    <!-- Login Card -->
-    <div id="login-card" class="card">
-      <h3>Login</h3>
-      <label>Email</label>
-      <input type="email" id="email" value="avinavrashujain@gmail.com"/>
-      <label>Password</label>
-      <input type="password" id="password" value="123456"/>
-      <button id="login-btn">Login</button>
-    </div>
+    <!-- Header -->
+    <header class="flex items-start justify-between mb-4">
+      <div>
+        <h1 class="text-2xl font-semibold">Meesho · Local — Sales & Profit Platform</h1>
+        <p class="muted text-sm mt-1">Mobile-first dashboard, realtime with Firebase. Protected with email auth.</p>
+      </div>
+      <div class="text-right">
+        <div id="userEmail" class="muted text-sm">Not signed in</div>
+        <div id="authButtons" class="mt-2">
+          <button id="btnLogout" class="hidden px-3 py-1 rounded bg-red-600 text-white text-sm">Logout</button>
+        </div>
+      </div>
+    </header>
 
-    <!-- App Card -->
-    <div id="app-card" class="card hidden">
-      <h3>Add Sale</h3>
-      <label>Product Name</label>
-      <input type="text" id="product-name" placeholder="Enter product name"/>
+    <!-- LOGIN CARD -->
+    <section id="loginCard" class="glass p-4 rounded-lg shadow-lg max-w-md mx-auto">
+      <h2 class="text-lg font-medium mb-2">Sign in (Email)</h2>
+      <div class="text-sm muted mb-4">Use your authorized account only.</div>
+      <div class="space-y-2">
+        <input id="emailInput" class="w-full p-2 rounded bg-transparent border border-slate-700" placeholder="Email" value="avinavrashujain@gmail.com" />
+        <input id="passwordInput" type="password" class="w-full p-2 rounded bg-transparent border border-slate-700" placeholder="Password" value="123456" />
+        <div class="flex gap-2">
+          <button id="btnLogin" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-black font-semibold py-2 rounded">Login</button>
+          <button id="btnUseLocal" class="flex-1 bg-slate-700 hover:bg-slate-600 text-sm py-2 rounded">Dev-only: local view</button>
+        </div>
+      </div>
+    </section>
 
-      <label>Quantity</label>
-      <input type="number" id="quantity" min="1" value="1"/>
+    <!-- MAIN APP -->
+    <main id="app" class="hidden mt-6 lg-grid">
 
-      <label>Total Amount (Meesho)</label>
-      <input type="number" id="meesho-total" placeholder="Total from Meesho"/>
+      <!-- LEFT: Form & Recent Orders -->
+      <div class="space-y-4">
+        <!-- Form -->
+        <div class="glass p-4 rounded-lg shadow-lg">
+          <h3 class="text-lg font-medium mb-2">Add New Order</h3>
 
-      <label>Total Amount (Local)</label>
-      <input type="number" id="local-total" placeholder="Total if sold locally"/>
+          <form id="orderForm" class="space-y-3">
+            <div>
+              <label class="text-sm muted">Product</label>
+              <input id="productInput" list="productList" class="w-full p-2 rounded bg-transparent border border-slate-700" placeholder="Type or choose product" required />
+              <datalist id="productList"></datalist>
+            </div>
 
-      <button id="save-btn">Save Entry</button>
-      <button class="logout" id="logout-btn">Logout</button>
-    </div>
+            <div class="flex gap-2">
+              <div class="flex-1">
+                <label class="text-sm muted">Quantity</label>
+                <input id="qtyInput" type="number" min="1" value="1" class="w-full p-2 rounded bg-transparent border border-slate-700" required />
+              </div>
+              <div>
+                <label class="text-sm muted">Platform</label>
+                <select id="platformInput" class="p-2 rounded bg-transparent border border-slate-700">
+                  <option value="meesho">Meesho</option>
+                  <option value="local">Local</option>
+                </select>
+              </div>
+            </div>
 
-    <!-- History Card -->
-    <div id="history-card" class="card hidden">
-      <h3>Sales History</h3>
-      <div id="history-list" class="history"></div>
-      <button id="export-btn">Export CSV</button>
-    </div>
+            <div>
+              <label class="text-sm muted">Total Amount (₹)</label>
+              <input id="totalInput" type="number" min="0" step="0.01" class="w-full p-2 rounded bg-transparent border border-slate-700" placeholder="e.g. 840" required />
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div class="muted text-sm">Per unit: <span id="perUnitDisplay">₹0.00</span></div>
+              <div class="flex gap-2">
+                <button id="btnSaveOrder" class="bg-emerald-500 hover:bg-emerald-600 text-black font-semibold px-4 py-2 rounded">Save</button>
+                <button id="btnClearForm" type="button" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded">Clear</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Recent orders -->
+        <div class="glass p-4 rounded-lg shadow-lg card-scroll">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="font-medium">Recent Orders</h4>
+            <div class="text-sm muted">
+              <button id="btnRefresh" class="px-2 py-1 rounded bg-slate-700">Refresh</button>
+            </div>
+          </div>
+          <div id="recentList" class="space-y-2 text-sm"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Dashboard & Reports -->
+      <aside class="space-y-4">
+
+        <!-- Summary cards -->
+        <div class="glass p-4 rounded-lg shadow-lg">
+          <h3 class="text-lg font-medium mb-2">Summary</h3>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="p-3 bg-slate-900 rounded">
+              <div class="muted text-sm">Total Orders</div>
+              <div id="totalOrders" class="text-xl font-semibold">0</div>
+            </div>
+            <div class="p-3 bg-slate-900 rounded">
+              <div class="muted text-sm">Total Items Sold</div>
+              <div id="totalItems" class="text-xl font-semibold">0</div>
+            </div>
+            <div class="p-3 bg-slate-900 rounded">
+              <div class="muted text-sm">Meesho Revenue</div>
+              <div id="meeshoRevenue" class="text-xl font-semibold">₹0.00</div>
+            </div>
+            <div class="p-3 bg-slate-900 rounded">
+              <div class="muted text-sm">Local Revenue</div>
+              <div id="localRevenue" class="text-xl font-semibold">₹0.00</div>
+            </div>
+            <div class="p-3 bg-slate-900 rounded col-span-2">
+              <div class="muted text-sm">Total Profit (Meesho - Local avg diff)</div>
+              <div id="totalProfit" class="text-xl font-semibold">₹0.00</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reports -->
+        <div class="glass p-4 rounded-lg shadow-lg">
+          <h3 class="text-lg font-medium mb-2">Reports & Filters</h3>
+
+          <div class="space-y-2">
+            <div class="flex gap-2">
+              <input id="fromDate" type="date" class="flex-1 p-2 rounded bg-transparent border border-slate-700" />
+              <input id="toDate" type="date" class="flex-1 p-2 rounded bg-transparent border border-slate-700" />
+            </div>
+
+            <select id="reportProduct" class="p-2 rounded bg-transparent border border-slate-700 w-full">
+              <option value="">-- All products --</option>
+            </select>
+
+            <select id="reportPlatform" class="p-2 rounded bg-transparent border border-slate-700 w-full">
+              <option value="">-- All platforms --</option>
+              <option value="meesho">Meesho</option>
+              <option value="local">Local</option>
+            </select>
+
+            <div class="flex gap-2">
+              <button id="btnApplyFilter" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-black py-2 rounded">Apply</button>
+              <button id="btnResetFilter" class="flex-1 bg-slate-700 hover:bg-slate-600 py-2 rounded">Reset</button>
+            </div>
+
+            <div class="mt-3">
+              <canvas id="trendChart" height="120"></canvas>
+            </div>
+
+            <div class="mt-3 flex gap-2">
+              <button id="btnExportFiltered" class="flex-1 bg-indigo-600 hover:bg-indigo-700 py-2 rounded">Export CSV</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product list (compact) -->
+        <div class="glass p-4 rounded-lg shadow-lg card-scroll">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="font-medium">Products</h4>
+            <div class="muted text-sm">Tap product to expand</div>
+          </div>
+          <div id="productsContainer" class="space-y-2 text-sm"></div>
+        </div>
+      </aside>
+
+    </main>
+
+    <!-- Footer / small note -->
+    <footer class="text-center muted mt-6 text-sm">
+      Secure your Firebase rules before sharing. Export and backups recommended.
+    </footer>
   </div>
 
-  <!-- Firebase -->
+  <!-- Firebase SDKs (modular) -->
   <script type="module">
+    // ----------------------
+    // CONFIG - replace if needed
+    // ----------------------
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-    import { getDatabase, ref, push, set, onValue } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
+    import {
+      getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
+      createUserWithEmailAndPassword
+    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+    import {
+      getDatabase, ref, push, set, onValue, runTransaction, get, child, query, orderByChild
+    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
 
-    // Your Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyBsMQUXlXv5qQRWGa4ImL48WieON8nsEBA",
       authDomain: "portal-85f3d.firebaseapp.com",
+      databaseURL: "https://portal-85f3d-default-rtdb.firebaseio.com/",
       projectId: "portal-85f3d",
       storageBucket: "portal-85f3d.firebasestorage.app",
       messagingSenderId: "758294315137",
       appId: "1:758294315137:web:7d0ccb6a7193eea9228d80",
-      measurementId: "G-YNSJVMPWWP",
-      databaseURL: "https://portal-85f3d-default-rtdb.firebaseio.com/"
+      measurementId: "G-YNSJVMPWWP"
     };
+
+    // Allowed email
+    const ALLOWED_EMAIL = 'avinavrashujain@gmail.com';
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    const loginCard = document.getElementById("login-card");
-    const appCard = document.getElementById("app-card");
-    const historyCard = document.getElementById("history-card");
-    const loginBtn = document.getElementById("login-btn");
-    const logoutBtn = document.getElementById("logout-btn");
-    const saveBtn = document.getElementById("save-btn");
-    const exportBtn = document.getElementById("export-btn");
-    const historyList = document.getElementById("history-list");
+    // DOM refs
+    const loginCard = document.getElementById('loginCard');
+    const appEl = document.getElementById('app');
+    const emailInput = document.getElementById('emailInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const btnLogin = document.getElementById('btnLogin');
+    const btnLogout = document.getElementById('btnLogout');
+    const userEmailEl = document.getElementById('userEmail');
+    const btnUseLocal = document.getElementById('btnUseLocal');
 
-    let currentUser = null;
+    const productInput = document.getElementById('productInput');
+    const productList = document.getElementById('productList');
+    const qtyInput = document.getElementById('qtyInput');
+    const platformInput = document.getElementById('platformInput');
+    const totalInput = document.getElementById('totalInput');
+    const perUnitDisplay = document.getElementById('perUnitDisplay');
+    const btnSaveOrder = document.getElementById('btnSaveOrder');
+    const btnClearForm = document.getElementById('btnClearForm');
+    const recentList = document.getElementById('recentList');
+    const btnRefresh = document.getElementById('btnRefresh');
 
-    // Handle login
-    loginBtn.addEventListener("click", async () => {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
+    const totalOrdersEl = document.getElementById('totalOrders');
+    const totalItemsEl = document.getElementById('totalItems');
+    const meeshoRevenueEl = document.getElementById('meeshoRevenue');
+    const localRevenueEl = document.getElementById('localRevenue');
+    const totalProfitEl = document.getElementById('totalProfit');
+
+    const reportProduct = document.getElementById('reportProduct');
+    const reportPlatform = document.getElementById('reportPlatform');
+    const fromDate = document.getElementById('fromDate');
+    const toDate = document.getElementById('toDate');
+    const btnApplyFilter = document.getElementById('btnApplyFilter');
+    const btnResetFilter = document.getElementById('btnResetFilter');
+    const btnExportFiltered = document.getElementById('btnExportFiltered');
+
+    const productsContainer = document.getElementById('productsContainer');
+
+    const trendCtx = document.getElementById('trendChart').getContext('2d');
+    let trendChart = null;
+
+    // Local caches
+    let productsCache = {};    // slug => product object
+    let ordersCache = {};      // orderId => order object
+
+    // ----------------------
+    // Helpers
+    // ----------------------
+    function slugify(s){
+      return String(s||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+    }
+    function fmtMoney(x){ return '₹'+(Number(x)||0).toFixed(2); }
+    function nowTS(){ return Date.now(); }
+
+    // ----------------------
+    // Auth
+    // ----------------------
+    btnLogin.addEventListener('click', async ()=> {
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+      if(!email || !password){ alert('Enter email & password'); return; }
+
       try {
-        await signInWithEmailAndPassword(auth, email, password);
-      } catch (error) {
-        alert("Login failed: " + error.message);
+        // sign in (if user doesn't exist, try to create - only for convenience, remove in prod)
+        try {
+          await signInWithEmailAndPassword(auth, email, password);
+        } catch(e) {
+          // if user doesn't exist and the email matches allowed email, create once
+          if(e.code === 'auth/user-not-found' && email === ALLOWED_EMAIL){
+            await createUserWithEmailAndPassword(auth, email, password);
+            // then sign in
+            await signInWithEmailAndPassword(auth, email, password);
+          } else {
+            throw e;
+          }
+        }
+      } catch(err){
+        console.error(err);
+        alert('Login failed: ' + (err.message || err));
       }
     });
 
-    // Handle logout
-    logoutBtn.addEventListener("click", async () => {
+    btnLogout.addEventListener('click', async ()=> {
       await signOut(auth);
     });
 
-    // Auth state observer
+    // Dev-only: let UI show without auth (for quick preview) — you will remove this in production
+    btnUseLocal.addEventListener('click', ()=> {
+      loginCard.classList.add('hidden');
+      appEl.classList.remove('hidden');
+      userEmailEl.textContent = 'Local preview';
+      btnLogout.classList.remove('hidden');
+      loadRealtimeListeners();
+    });
+
     onAuthStateChanged(auth, (user) => {
-      if (user && user.email === "avinavrashujain@gmail.com") {
-        currentUser = user;
-        loginCard.classList.add("hidden");
-        appCard.classList.remove("hidden");
-        historyCard.classList.remove("hidden");
-        loadHistory();
+      if(user && user.email === ALLOWED_EMAIL){
+        loginCard.classList.add('hidden');
+        appEl.classList.remove('hidden');
+        userEmailEl.textContent = user.email;
+        btnLogout.classList.remove('hidden');
+        loadRealtimeListeners();
       } else {
-        currentUser = null;
-        loginCard.classList.remove("hidden");
-        appCard.classList.add("hidden");
-        historyCard.classList.add("hidden");
+        // not authorized
+        loginCard.classList.remove('hidden');
+        appEl.classList.add('hidden');
+        userEmailEl.textContent = 'Not signed in';
+        btnLogout.classList.add('hidden');
+        // clear caches
+        productsCache = {};
+        ordersCache = {};
       }
     });
 
-    // Save entry
-    saveBtn.addEventListener("click", async () => {
-      const name = document.getElementById("product-name").value.trim();
-      const qty = parseInt(document.getElementById("quantity").value);
-      const meeshoTotal = parseFloat(document.getElementById("meesho-total").value);
-      const localTotal = parseFloat(document.getElementById("local-total").value);
+    // ----------------------
+    // Database interaction
+    // DB structure:
+    // /products/{slug} => { name, slug, mee... , local... , lastUpdated }
+    // /orders/{pushId}  => { productSlug, productName, platform, quantity, totalAmount, unitPrice, timestamp }
+    // ----------------------
 
-      if (!name || !qty || !meeshoTotal || !localTotal) {
-        alert("Please fill all fields");
-        return;
-      }
+    function loadRealtimeListeners(){
+      // Products listener
+      onValue(ref(db, 'products'), (snap)=>{
+        productsCache = snap.val() || {};
+        renderProductDatalist();
+        renderProductsPanel();
+        populateProductFilter();
+        computeSummary();
+      });
 
-      const unitMeesho = (meeshoTotal / qty).toFixed(2);
-      const unitLocal = (localTotal / qty).toFixed(2);
+      // Orders listener
+      onValue(ref(db, 'orders'), (snap)=>{
+        ordersCache = snap.val() || {};
+        renderRecentOrders();
+        computeSummary();
+        updateTrendChart(); 
+      });
+    }
 
-      const entry = {
-        name,
-        qty,
-        meeshoTotal,
-        localTotal,
-        unitMeesho,
-        unitLocal,
-        timestamp: Date.now()
-      };
+    // ----------------------
+    // UI rendering
+    // ----------------------
+    function renderProductDatalist(){
+      productList.innerHTML = '';
+      Object.values(productsCache).forEach(p=>{
+        const opt = document.createElement('option'); opt.value = p.name || p.slug;
+        productList.appendChild(opt);
+      });
+    }
 
-      const newRef = push(ref(db, "sales"));
-      await set(newRef, entry);
+    function renderProductsPanel(){
+      productsContainer.innerHTML = '';
+      const rows = Object.entries(productsCache).sort((a,b)=>{
+        const aa = a[1], bb = b[1];
+        const sa = (aa.meesho?.totalQuantity||0) + (aa.local?.totalQuantity||0);
+        const sb = (bb.meesho?.totalQuantity||0) + (bb.local?.totalQuantity||0);
+        return sb - sa;
+      });
+      rows.forEach(([slug, p])=>{
+        const card = document.createElement('div');
+        card.className = 'p-3 bg-slate-900 rounded';
+        card.innerHTML = `<div class="flex justify-between items-start"><div><strong>${p.name || slug}</strong><div class="muted text-xs">${slug}</div></div>
+          <div class="text-right"><div class="text-sm muted">Sold</div><div class="font-semibold">${(p.meesho?.totalQuantity||0)+(p.local?.totalQuantity||0)}</div></div></div>
+          <div class="mt-2 text-xs muted">Meesho: ${(p.meesho?.totalQuantity||0)} @ ${fmtMoney(p.meesho?.avgUnitPrice||0)} (${fmtMoney(p.meesho?.totalRevenue||0)})</div>
+          <div class="text-xs muted">Local: ${(p.local?.totalQuantity||0)} @ ${fmtMoney(p.local?.avgUnitPrice||0)} (${fmtMoney(p.local?.totalRevenue||0)})</div>
+          <div class="mt-2 flex gap-2"><button data-slug="${slug}" class="viewHistory px-2 py-1 text-xs rounded bg-slate-700">History</button>
+          <button data-slug="${slug}" class="renameProduct px-2 py-1 text-xs rounded bg-amber-600">Rename</button></div>`;
+        productsContainer.appendChild(card);
+      });
 
-      alert("Entry saved!");
-      loadHistory();
+      // attach listeners
+      document.querySelectorAll('.viewHistory').forEach(btn=>{
+        btn.addEventListener('click', ()=> { showProductHistory(btn.dataset.slug); });
+      });
+      document.querySelectorAll('.renameProduct').forEach(btn=>{
+        btn.addEventListener('click', ()=> { renameProductPrompt(btn.dataset.slug); });
+      });
+    }
+
+    function renderRecentOrders(){
+      recentList.innerHTML = '';
+      const arr = Object.entries(ordersCache).map(([id,o]) => ({ id, ...o }));
+      arr.sort((a,b) => b.timestamp - a.timestamp);
+      arr.slice(0, 50).forEach(o=>{
+        const el = document.createElement('div');
+        el.className = 'p-2 bg-slate-900 rounded flex justify-between';
+        el.innerHTML = `<div>
+            <div class="text-sm"><strong>${o.productName}</strong> <span class="muted text-xs">(${o.productSlug})</span></div>
+            <div class="muted text-xs">${o.quantity} × ${fmtMoney(o.unitPrice)} • ${o.platform}</div>
+          </div>
+          <div class="text-right">
+            <div class="font-semibold">${fmtMoney(o.totalAmount)}</div>
+            <div class="muted text-xs">${new Date(o.timestamp).toLocaleString()}</div>
+          </div>`;
+        recentList.appendChild(el);
+      });
+    }
+
+    // ----------------------
+    // Actions: save order
+    // ----------------------
+    qtyInput.addEventListener('input', updatePerUnit);
+    totalInput.addEventListener('input', updatePerUnit);
+    productInput.addEventListener('input', ()=>{}); // placeholder for future debounce/lookup
+
+    function updatePerUnit(){
+      const q = Number(qtyInput.value) || 0;
+      const t = Number(totalInput.value) || 0;
+      const per = q > 0 ? (t / q) : 0;
+      perUnitDisplay.textContent = fmtMoney(per.toFixed(2));
+    }
+
+    btnClearForm.addEventListener('click', ()=> {
+      productInput.value=''; qtyInput.value=1; platformInput.value='meesho'; totalInput.value=''; updatePerUnit();
     });
 
-    // Load history
-    function loadHistory() {
-      const salesRef = ref(db, "sales");
-      onValue(salesRef, (snapshot) => {
-        const data = snapshot.val();
-        historyList.innerHTML = "";
-        if (data) {
-          Object.values(data).sort((a,b) => b.timestamp - a.timestamp).forEach(sale => {
-            const div = document.createElement("div");
-            div.textContent = `${sale.name} | Qty: ${sale.qty} | Meesho: ₹${sale.meeshoTotal} (₹${sale.unitMeesho}/unit) | Local: ₹${sale.localTotal} (₹${sale.unitLocal}/unit)`;
-            historyList.appendChild(div);
-          });
+    btnSaveOrder.addEventListener('click', async (e)=>{
+      e.preventDefault();
+      const nameRaw = (productInput.value || '').trim();
+      const quantity = Math.max(1, parseInt(qtyInput.value)||0);
+      const platform = platformInput.value || 'meesho';
+      const totalAmount = Number(totalInput.value) || 0;
+
+      if(!nameRaw){ alert('Enter product name'); return; }
+      if(quantity <= 0 || totalAmount <= 0){ alert('Quantity and total must be > 0'); return; }
+
+      const slug = slugify(nameRaw);
+      const unitPrice = totalAmount / quantity;
+      const ts = nowTS();
+
+      // create order entry
+      const newOrderRef = push(ref(db, 'orders'));
+      await set(newOrderRef, {
+        productSlug: slug,
+        productName: nameRaw,
+        platform,
+        quantity,
+        totalAmount,
+        unitPrice,
+        timestamp: ts
+      });
+
+      // update product aggregates atomically
+      const productRef = ref(db, `products/${slug}`);
+      await runTransaction(productRef, (current)=>{
+        if(current === null){
+          const base = { name: nameRaw, slug, lastUpdated: ts };
+          base[platform] = {
+            totalQuantity: quantity,
+            totalRevenue: totalAmount,
+            avgUnitPrice: unitPrice
+          };
+          return base;
         } else {
-          historyList.innerHTML = "<i>No sales yet</i>";
+          current.name = current.name || nameRaw;
+          current.lastUpdated = ts;
+          const p = current[platform] || { totalQuantity:0, totalRevenue:0, avgUnitPrice:0 };
+          p.totalQuantity = (p.totalQuantity||0) + quantity;
+          p.totalRevenue = (p.totalRevenue||0) + totalAmount;
+          p.avgUnitPrice = p.totalQuantity ? (p.totalRevenue / p.totalQuantity) : 0;
+          current[platform] = p;
+          return current;
+        }
+      });
+
+      // UI feedback and reset
+      btnClearForm.click();
+      alert('Order saved');
+    });
+
+    // ----------------------
+    // Product rename (simple)
+    // ----------------------
+    async function renameProductPrompt(slug){
+      const newName = prompt('Enter new product name (this updates display name only):', productsCache[slug]?.name || '');
+      if(!newName) return;
+      await set(ref(db, `products/${slug}/name`), newName);
+      // Also update productName in orders? (we will not rewrite past orders by default)
+      alert('Product renamed. (past orders keep original productName field.)');
+    }
+
+    // ----------------------
+    // Show product history
+    // ----------------------
+    async function showProductHistory(slug){
+      // Pull orders for this product
+      const arr = Object.entries(ordersCache).map(([id,o]) => ({ id, ...o })).filter(o => o.productSlug === slug);
+      if(arr.length === 0){ alert('No history for this product'); return; }
+      arr.sort((a,b) => b.timestamp - a.timestamp);
+      // Build simple text list (modal could be implemented)
+      let txt = `History for ${productsCache[slug]?.name || slug}\\n\\n`;
+      arr.forEach(r => {
+        txt += `${new Date(r.timestamp).toLocaleString()} | ${r.platform.toUpperCase()} | Q:${r.quantity} | ${fmtMoney(r.totalAmount)} (${fmtMoney(r.unitPrice)}/unit)\\n`;
+      });
+      alert(txt);
+    }
+
+    // ----------------------
+    // Reports: filtering & export
+    // ----------------------
+    function populateProductFilter(){
+      reportProduct.innerHTML = '<option value="">-- All products --</option>';
+      Object.values(productsCache).forEach(p=>{
+        const opt = document.createElement('option'); opt.value = p.slug; opt.textContent = p.name || p.slug;
+        reportProduct.appendChild(opt);
+      });
+    }
+
+    btnApplyFilter.addEventListener('click', applyFilter);
+    btnResetFilter.addEventListener('click', ()=> {
+      fromDate.value = ''; toDate.value = ''; reportProduct.value = ''; reportPlatform.value = '';
+      applyFilter();
+    });
+
+    function applyFilter(){
+      // gather filter values
+      const pSlug = reportProduct.value || '';
+      const platform = reportPlatform.value || '';
+      const fromTS = fromDate.value ? new Date(fromDate.value + 'T00:00:00').getTime() : 0;
+      const toTS = toDate.value ? new Date(toDate.value + 'T23:59:59').getTime() : Date.now();
+
+      // filter orders
+      const arr = Object.entries(ordersCache).map(([id,o])=>({id,...o})).filter(o=>{
+        if(o.timestamp < fromTS || o.timestamp > toTS) return false;
+        if(pSlug && o.productSlug !== pSlug) return false;
+        if(platform && o.platform !== platform) return false;
+        return true;
+      }).sort((a,b)=>b.timestamp - a.timestamp);
+
+      // summary values for filtered set
+      let totalOrders = arr.length;
+      let totalItems = arr.reduce((s,o)=>s + (o.quantity||0), 0);
+      let meeshoRev=0, localRev=0;
+      arr.forEach(o=>{
+        if(o.platform === 'meesho') meeshoRev += o.totalAmount;
+        else if(o.platform === 'local') localRev += o.totalAmount;
+      });
+      const avgDiff = ( (meeshoRev/Math.max(1, arr.filter(o=>o.platform==='meesho').reduce((s,o)=>s+o.quantity,0))) || 0 ) -
+                      ( (localRev/Math.max(1, arr.filter(o=>o.platform==='local').reduce((s,o)=>s+o.quantity,0))) || 0 );
+
+      // show a quick modal-like summary
+      let lines = `Filtered Results\\nOrders: ${totalOrders} | Items: ${totalItems}\\nMeesho: ${fmtMoney(meeshoRev)} | Local: ${fmtMoney(localRev)} | Avg diff: ${fmtMoney(avgDiff) }\\n\\nRecent items:\\n`;
+      arr.slice(0,50).forEach(o => {
+        lines += `${new Date(o.timestamp).toLocaleString()} | ${o.productName} | ${o.platform.toUpperCase()} | Q:${o.quantity} | ${fmtMoney(o.totalAmount)}\\n`;
+      });
+      alert(lines);
+      // update chart with filtered set
+      updateTrendChart(arr);
+    }
+
+    btnExportFiltered.addEventListener('click', ()=> {
+      // Export using current filters (reuse applyFilter logic but produce CSV)
+      const pSlug = reportProduct.value || '';
+      const platform = reportPlatform.value || '';
+      const fromTS = fromDate.value ? new Date(fromDate.value + 'T00:00:00').getTime() : 0;
+      const toTS = toDate.value ? new Date(toDate.value + 'T23:59:59').getTime() : Date.now();
+
+      const arr = Object.entries(ordersCache).map(([id,o])=>({id,...o})).filter(o=>{
+        if(o.timestamp < fromTS || o.timestamp > toTS) return false;
+        if(pSlug && o.productSlug !== pSlug) return false;
+        if(platform && o.platform !== platform) return false;
+        return true;
+      }).sort((a,b)=>b.timestamp - a.timestamp);
+
+      if(arr.length === 0){ alert('No data for the selected filters'); return; }
+
+      let csv = 'Date,Product,Platform,Quantity,UnitPrice,TotalAmount\\n';
+      arr.forEach(o=>{
+        csv += `"${new Date(o.timestamp).toLocaleString()}","${o.productName}","${o.platform}",${o.quantity},${o.unitPrice},${o.totalAmount}\\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'report.csv'; a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // ----------------------
+    // Summary computation (global)
+    // ----------------------
+    function computeSummary(){
+      const orders = Object.values(ordersCache || {});
+      const totalOrders = orders.length;
+      const totalItems = orders.reduce((s,o)=> s + (o.quantity||0), 0);
+      const meeshoRev = orders.reduce((s,o)=> s + ((o.platform==='meesho')? o.totalAmount : 0), 0);
+      const localRev = orders.reduce((s,o)=> s + ((o.platform==='local')? o.totalAmount : 0), 0);
+
+      // Approx totalProfit as difference of per-unit averages * quantities:
+      // Compute weighted avg per-unit price for meesho and local across all products
+      const meegroups = {}; // product -> {meeshoQty, meeshoRev, localQty, localRev}
+      orders.forEach(o=>{
+        const s = meegroups[o.productSlug] = (meegroups[o.productSlug]||{meeshoQty:0,meeshoRev:0,localQty:0,localRev:0});
+        if(o.platform === 'meesho'){ s.meeshoQty += o.quantity; s.meeshoRev += o.totalAmount; }
+        else { s.localQty += o.quantity; s.localRev += o.totalAmount; }
+      });
+
+      let totalProfit = 0;
+      Object.values(meegroups).forEach(g=>{
+        const meeshoAvg = g.meeshoQty ? (g.meeshoRev / g.meeshoQty) : 0;
+        const localAvg = g.localQty ? (g.localRev / g.localQty) : 0;
+        // profit estimate: (meeshoAvg - localAvg) * (g.meeshoQty) — i.e. how much more you earned on Meesho units vs local baseline
+        totalProfit += (meeshoAvg - localAvg) * (g.meeshoQty || 0);
+      });
+
+      // render
+      totalOrdersEl.textContent = totalOrders;
+      totalItemsEl.textContent = totalItems;
+      meeshoRevenueEl.textContent = fmtMoney(meeshoRev);
+      localRevenueEl.textContent = fmtMoney(localRev);
+      totalProfitEl.textContent = fmtMoney(totalProfit);
+    }
+
+    // ----------------------
+    // Trend chart (orders per day) - simple implementation
+    // ----------------------
+    function updateTrendChart(filteredArr){
+      const arr = (filteredArr ?
+        filteredArr.slice() :
+        Object.values(ordersCache).map(o=> ({...o}))
+      );
+      // bucket by date (day)
+      const bucket = {};
+      arr.forEach(o=>{
+        const d = new Date(o.timestamp);
+        const day = d.toISOString().slice(0,10); // YYYY-MM-DD
+        bucket[day] = (bucket[day] || 0) + o.totalAmount;
+      });
+      const labels = Object.keys(bucket).sort();
+      const data = labels.map(l => bucket[l]);
+
+      if(trendChart) trendChart.destroy();
+      trendChart = new Chart(trendCtx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Revenue',
+            data,
+            tension: 0.3,
+            fill: true,
+            borderColor: '#60a5fa',
+            backgroundColor: 'rgba(96,165,250,0.12)'
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: { x: { display: true }, y: { beginAtZero: true } }
         }
       });
     }
 
-    // Export CSV
-    exportBtn.addEventListener("click", () => {
-      const salesRef = ref(db, "sales");
-      onValue(salesRef, (snapshot) => {
-        const data = snapshot.val();
-        if (!data) {
-          alert("No data to export");
-          return;
-        }
-        let csv = "Product,Quantity,Meesho Total,Meesho Unit,Local Total,Local Unit,Date\n";
-        Object.values(data).forEach(sale => {
-          const date = new Date(sale.timestamp).toLocaleString();
-          csv += `${sale.name},${sale.qty},${sale.meeshoTotal},${sale.unitMeesho},${sale.localTotal},${sale.unitLocal},${date}\n`;
-        });
-        const blob = new Blob([csv], { type: "text/csv" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "sales_history.csv";
-        a.click();
-      }, { onlyOnce: true });
+    // ----------------------
+    // Listeners
+    // ----------------------
+    btnRefresh.addEventListener('click', ()=> {
+      renderRecentOrders();
+      renderProductsPanel();
+      computeSummary();
+      alert('Refreshed');
     });
+
+    // initial local cache load (improve UX)
+    (function loadLocalCache(){
+      try{
+        const cachedP = JSON.parse(localStorage.getItem('products_cache')||'{}');
+        const cachedO = JSON.parse(localStorage.getItem('orders_cache')||'{}');
+        if(Object.keys(cachedP).length){ productsCache = cachedP; renderProductDatalist(); renderProductsPanel(); populateProductFilter(); computeSummary();}
+        if(Object.keys(cachedO).length){ ordersCache = cachedO; renderRecentOrders(); computeSummary(); updateTrendChart(); }
+      }catch(e){}
+    })();
+
+    // Save to local cache periodically for faster UX
+    setInterval(()=> {
+      try{ localStorage.setItem('products_cache', JSON.stringify(productsCache)); localStorage.setItem('orders_cache', JSON.stringify(ordersCache)); }catch(e){}
+    }, 5000);
+
+    // start (no-op) — actual listeners start after login via loadRealtimeListeners
   </script>
 </body>
 </html>
