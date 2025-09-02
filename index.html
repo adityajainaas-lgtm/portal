@@ -1,132 +1,115 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Meesho Mobile Profit Tracker</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Meesho Profit Tracker</title>
   <style>
-    /* Mobile-first clean UI */
-    :root{--bg:#0b1220;--card:#071227;--muted:#9aa6b2;--accent:#10b981;--danger:#ff6b6b}
-    *{box-sizing:border-box;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;color:#eaf3f8}
-    body{margin:0;background:linear-gradient(180deg,#04111b,#071427);padding:14px}
-    .wrap{max-width:720px;margin:0 auto}
-    header{display:flex;align-items:center;justify-content:space-between;gap:8px}
-    h1{font-size:18px;margin:0}
-    p.lead{margin:4px 0 10px 0;color:var(--muted);font-size:13px}
-    .card{background:var(--card);padding:12px;border-radius:12px;margin-bottom:12px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
-    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
-    input[type=text],input[type=number],select,input[type=date]{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:inherit;font-size:15px}
-    button{background:var(--accent);border:none;padding:10px;border-radius:10px;color:#042018;font-weight:700;cursor:pointer}
-    .muted{color:var(--muted);font-size:13px}
-    .row{display:flex;gap:8px}
-    .col{flex:1}
-    .small{font-size:13px}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:8px;text-align:left;border-bottom:1px dashed rgba(255,255,255,0.03);font-size:13px}
-    .statrow{display:flex;gap:8px;flex-wrap:wrap}
-    .stat{background:rgba(255,255,255,0.02);padding:10px;border-radius:10px;min-width:110px}
-    .platform-meesho{color:#9be7ff}
-    .platform-local{color:#ffd78f}
-    .auth-area{display:flex;gap:8px;align-items:center}
-    .danger{background:rgba(255,107,107,0.08);padding:8px;border-radius:8px;color:var(--danger)}
-    @media(min-width:720px){.grid{display:grid;grid-template-columns:1fr 340px;gap:12px}}
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      background: #f9f9f9;
+      color: #333;
+    }
+    .container {
+      max-width: 500px;
+      margin: auto;
+      padding: 16px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+    .card {
+      background: #fff;
+      padding: 16px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin-bottom: 16px;
+    }
+    label {
+      font-size: 14px;
+      display: block;
+      margin-top: 8px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      font-size: 14px;
+      margin-top: 4px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      background: #6200ea;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+    button:hover {
+      background: #4500b5;
+    }
+    .hidden { display: none; }
+    .history {
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    .logout {
+      background: #d32f2f;
+      margin-top: 8px;
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div>
-        <h1>Meesho · Local — Profit Tracker</h1>
-        <p class="lead">Mobile-first. Enter quantity + total amount. Google sign-in (only your email allowed).</p>
-      </div>
-      <div class="auth-area">
-        <div id="userEmail" class="muted small">Not signed in</div>
-        <button id="btnSign">Sign in</button>
-      </div>
-    </header>
+  <div class="container">
+    <h1>Meesho Profit Tracker</h1>
 
-    <div class="grid">
-      <main>
-        <div id="authBlock" class="card" style="display:none">
-          <div class="muted">You are not authorized. Sign in with allowed Google account.</div>
-        </div>
-
-        <div id="appUI" style="display:none">
-          <div class="card">
-            <form id="saleForm">
-              <label>Product name</label>
-              <input list="prod-list" id="productName" placeholder="Type product name" autocomplete="off" required />
-              <datalist id="prod-list"></datalist>
-
-              <div class="row" style="margin-top:10px">
-                <div class="col">
-                  <label>Quantity</label>
-                  <input id="quantity" type="number" min="1" value="1" required />
-                </div>
-                <div class="col">
-                  <label>Type</label>
-                  <select id="platformType">
-                    <option value="meesho">Meesho</option>
-                    <option value="local">Local</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style="margin-top:10px">
-                <label>Total amount (₹)</label>
-                <input id="totalAmount" type="number" step="0.01" placeholder="e.g. 840" required />
-              </div>
-
-              <div style="display:flex;gap:8px;margin-top:12px;align-items:center;justify-content:space-between">
-                <div class="muted small">Per-unit: <span id="perUnit">₹0</span></div>
-                <button type="submit">Save sale</button>
-              </div>
-
-            </form>
-          </div>
-
-          <div class="card">
-            <div class="statrow">
-              <div class="stat"><div class="muted small">Meesho Revenue</div><div id="meeshoRev">₹0</div></div>
-              <div class="stat"><div class="muted small">Local Revenue</div><div id="localRev">₹0</div></div>
-              <div class="stat"><div class="muted small">Avg Diff (Meesho - Local)</div><div id="avgDiff">₹0</div></div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-              <div><strong>Products</strong><div class="muted small">tap to expand history</div></div>
-              <div><button id="btnExport" class="link">Export CSV</button></div>
-            </div>
-
-            <div id="productsList"></div>
-          </div>
-
-        </div>
-      </main>
-
-      <aside>
-        <div class="card">
-          <div class="muted small">Quick actions</div>
-          <div style="display:flex;gap:8px;margin-top:8px">
-            <button id="btnRefresh" class="link">Refresh</button>
-            <button id="btnClear" class="link">Clear local cache</button>
-          </div>
-          <div style="margin-top:8px" class="muted small">Only you can access this app. Secure your DB rules before sharing.</div>
-        </div>
-      </aside>
-
+    <!-- Login Card -->
+    <div id="login-card" class="card">
+      <h3>Login</h3>
+      <label>Email</label>
+      <input type="email" id="email" value="avinavrashujain@gmail.com"/>
+      <label>Password</label>
+      <input type="password" id="password" value="123456"/>
+      <button id="login-btn">Login</button>
     </div>
 
+    <!-- App Card -->
+    <div id="app-card" class="card hidden">
+      <h3>Add Sale</h3>
+      <label>Product Name</label>
+      <input type="text" id="product-name" placeholder="Enter product name"/>
+
+      <label>Quantity</label>
+      <input type="number" id="quantity" min="1" value="1"/>
+
+      <label>Total Amount (Meesho)</label>
+      <input type="number" id="meesho-total" placeholder="Total from Meesho"/>
+
+      <label>Total Amount (Local)</label>
+      <input type="number" id="local-total" placeholder="Total if sold locally"/>
+
+      <button id="save-btn">Save Entry</button>
+      <button class="logout" id="logout-btn">Logout</button>
+    </div>
+
+    <!-- History Card -->
+    <div id="history-card" class="card hidden">
+      <h3>Sales History</h3>
+      <div id="history-list" class="history"></div>
+      <button id="export-btn">Export CSV</button>
+    </div>
   </div>
 
+  <!-- Firebase -->
   <script type="module">
-    // ---- Firebase and app logic ----
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-    import { getDatabase, ref, push, set, runTransaction, onValue, get } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+    import { getDatabase, ref, push, set, onValue } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
 
-    // Your firebase config (you provided earlier)
+    // Your Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyBsMQUXlXv5qQRWGa4ImL48WieON8nsEBA",
       authDomain: "portal-85f3d.firebaseapp.com",
@@ -134,263 +117,129 @@
       storageBucket: "portal-85f3d.firebasestorage.app",
       messagingSenderId: "758294315137",
       appId: "1:758294315137:web:7d0ccb6a7193eea9228d80",
-      measurementId: "G-YNSJVMPWWP"
+      measurementId: "G-YNSJVMPWWP",
+      databaseURL: "https://portal-85f3d-default-rtdb.firebaseio.com/"
     };
-
-    const ALLOWED_EMAIL = 'avinavrashujain@gmail.com'; // only this email can access
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    // --- DOM refs ---
-    const btnSign = document.getElementById('btnSign');
-    const userEmailEl = document.getElementById('userEmail');
-    const appUI = document.getElementById('appUI');
-    const authBlock = document.getElementById('authBlock');
-    const prodListEl = document.getElementById('prod-list');
-    const productNameInput = document.getElementById('productName');
-    const quantityInput = document.getElementById('quantity');
-    const totalAmountInput = document.getElementById('totalAmount');
-    const platformSelect = document.getElementById('platformType');
-    const perUnitEl = document.getElementById('perUnit');
-    const saleForm = document.getElementById('saleForm');
-    const productsList = document.getElementById('productsList');
-    const btnExport = document.getElementById('btnExport');
-    const btnRefresh = document.getElementById('btnRefresh');
-    const btnClear = document.getElementById('btnClear');
-    const meeshoRevEl = document.getElementById('meeshoRev');
-    const localRevEl = document.getElementById('localRev');
-    const avgDiffEl = document.getElementById('avgDiff');
+    const loginCard = document.getElementById("login-card");
+    const appCard = document.getElementById("app-card");
+    const historyCard = document.getElementById("history-card");
+    const loginBtn = document.getElementById("login-btn");
+    const logoutBtn = document.getElementById("logout-btn");
+    const saveBtn = document.getElementById("save-btn");
+    const exportBtn = document.getElementById("export-btn");
+    const historyList = document.getElementById("history-list");
 
-    // local cache
-    let productsCache = {}; // slug -> product data
+    let currentUser = null;
 
-    // utils
-    function slugify(name){
-      return name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
-    }
-    function fmt(x){ return '₹'+(Number(x)||0).toFixed(2) }
-
-    // Auth flow
-    const provider = new GoogleAuthProvider();
-
-    btnSign.addEventListener('click', ()=>{
-      signInWithRedirect(auth, provider);
+    // Handle login
+    loginBtn.addEventListener("click", async () => {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (error) {
+        alert("Login failed: " + error.message);
+      }
     });
 
-    // Auto handle redirect result (useful for mobile)
-    getRedirectResult(auth).catch(()=>{});
+    // Handle logout
+    logoutBtn.addEventListener("click", async () => {
+      await signOut(auth);
+    });
 
-    // Listen for auth state changes
-    onAuthStateChanged(auth, async (user)=>{
-      if(user){
-        userEmailEl.textContent = user.email;
-        // allow only if email matches
-        if(user.email !== ALLOWED_EMAIL){
-          // unauthorized: sign out immediately
-          userEmailEl.textContent = user.email + ' (unauthorized)';
-          await signOut(auth);
-          alert('Signed in with wrong account. Please sign in with ' + ALLOWED_EMAIL);
-          showAuthRequired();
+    // Auth state observer
+    onAuthStateChanged(auth, (user) => {
+      if (user && user.email === "avinavrashujain@gmail.com") {
+        currentUser = user;
+        loginCard.classList.add("hidden");
+        appCard.classList.remove("hidden");
+        historyCard.classList.remove("hidden");
+        loadHistory();
+      } else {
+        currentUser = null;
+        loginCard.classList.remove("hidden");
+        appCard.classList.add("hidden");
+        historyCard.classList.add("hidden");
+      }
+    });
+
+    // Save entry
+    saveBtn.addEventListener("click", async () => {
+      const name = document.getElementById("product-name").value.trim();
+      const qty = parseInt(document.getElementById("quantity").value);
+      const meeshoTotal = parseFloat(document.getElementById("meesho-total").value);
+      const localTotal = parseFloat(document.getElementById("local-total").value);
+
+      if (!name || !qty || !meeshoTotal || !localTotal) {
+        alert("Please fill all fields");
+        return;
+      }
+
+      const unitMeesho = (meeshoTotal / qty).toFixed(2);
+      const unitLocal = (localTotal / qty).toFixed(2);
+
+      const entry = {
+        name,
+        qty,
+        meeshoTotal,
+        localTotal,
+        unitMeesho,
+        unitLocal,
+        timestamp: Date.now()
+      };
+
+      const newRef = push(ref(db, "sales"));
+      await set(newRef, entry);
+
+      alert("Entry saved!");
+      loadHistory();
+    });
+
+    // Load history
+    function loadHistory() {
+      const salesRef = ref(db, "sales");
+      onValue(salesRef, (snapshot) => {
+        const data = snapshot.val();
+        historyList.innerHTML = "";
+        if (data) {
+          Object.values(data).sort((a,b) => b.timestamp - a.timestamp).forEach(sale => {
+            const div = document.createElement("div");
+            div.textContent = `${sale.name} | Qty: ${sale.qty} | Meesho: ₹${sale.meeshoTotal} (₹${sale.unitMeesho}/unit) | Local: ₹${sale.localTotal} (₹${sale.unitLocal}/unit)`;
+            historyList.appendChild(div);
+          });
+        } else {
+          historyList.innerHTML = "<i>No sales yet</i>";
+        }
+      });
+    }
+
+    // Export CSV
+    exportBtn.addEventListener("click", () => {
+      const salesRef = ref(db, "sales");
+      onValue(salesRef, (snapshot) => {
+        const data = snapshot.val();
+        if (!data) {
+          alert("No data to export");
           return;
         }
-        // authorized
-        showApp();
-      } else {
-        userEmailEl.textContent = 'Not signed in';
-        showAuthRequired();
-      }
+        let csv = "Product,Quantity,Meesho Total,Meesho Unit,Local Total,Local Unit,Date\n";
+        Object.values(data).forEach(sale => {
+          const date = new Date(sale.timestamp).toLocaleString();
+          csv += `${sale.name},${sale.qty},${sale.meeshoTotal},${sale.unitMeesho},${sale.localTotal},${sale.unitLocal},${date}\n`;
+        });
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "sales_history.csv";
+        a.click();
+      }, { onlyOnce: true });
     });
-
-    function showAuthRequired(){
-      appUI.style.display = 'none';
-      authBlock.style.display = 'block';
-      btnSign.style.display = 'inline-block';
-    }
-    function showApp(){
-      authBlock.style.display = 'none';
-      appUI.style.display = 'block';
-      btnSign.style.display = 'none';
-      loadProductsRealtime();
-      loadSalesSummary();
-    }
-
-    // Realtime listen to products node
-    function loadProductsRealtime(){
-      const productsRef = ref(db,'products');
-      onValue(productsRef, (snap)=>{
-        const val = snap.val()||{};
-        productsCache = val;
-        renderProductDatalist();
-        renderProductsList();
-        computeSummary();
-        try{ localStorage.setItem('prod_cache', JSON.stringify(productsCache)) }catch(e){}
-      });
-    }
-
-    function renderProductDatalist(){
-      prodListEl.innerHTML = '';
-      Object.values(productsCache).forEach(p=>{
-        const opt = document.createElement('option'); opt.value = p.name; prodListEl.appendChild(opt);
-      });
-    }
-
-    // compute per-unit display
-    function updatePerUnit(){
-      const qty = Number(quantityInput.value)||0;
-      const total = Number(totalAmountInput.value)||0;
-      const per = qty>0? (total/qty) : 0;
-      perUnitEl.textContent = fmt(per);
-    }
-    quantityInput.addEventListener('input', updatePerUnit);
-    totalAmountInput.addEventListener('input', updatePerUnit);
-
-    // Save sale
-    saleForm.addEventListener('submit', async (ev)=>{
-      ev.preventDefault();
-      const name = productNameInput.value.trim();
-      if(!name){ alert('Enter product name'); return }
-      const slug = slugify(name);
-      const qty = Math.max(1, parseInt(quantityInput.value)||1);
-      const totalAmt = Number(totalAmountInput.value)||0;
-      const platform = platformSelect.value; // 'meesho' or 'local'
-      const unitPrice = qty>0 ? (totalAmt / qty) : 0;
-      const now = new Date().toISOString();
-
-      // sale record to history under product
-      try{
-        // push to history
-        const histRef = ref(db, `products/${slug}/history`);
-        const newHist = push(histRef);
-        await set(newHist, {
-          platform,
-          quantity: qty,
-          totalAmount: totalAmt,
-          unitPrice,
-          date: now
-        });
-
-        // update aggregate totals atomically
-        const aggRef = ref(db, `products/${slug}/${platform}`);
-        await runTransaction(aggRef, (current)=>{
-          if(current === null){
-            return {
-              totalQuantity: qty,
-              totalRevenue: totalAmt,
-              avgUnitPrice: unitPrice
-            };
-          } else {
-            const newQty = (current.totalQuantity||0) + qty;
-            const newRev = (current.totalRevenue||0) + totalAmt;
-            const newAvg = newQty>0 ? (newRev / newQty) : 0;
-            current.totalQuantity = newQty;
-            current.totalRevenue = newRev;
-            current.avgUnitPrice = newAvg;
-            return current;
-          }
-        });
-
-        // also ensure product name saved at root (non-destructive)
-        const nameRef = ref(db, `products/${slug}/name`);
-        await set(nameRef, name);
-
-        // reset form
-        saleForm.reset(); quantityInput.value = 1; totalAmountInput.value = ''; updatePerUnit();
-        alert('Sale recorded');
-      }catch(err){
-        console.error(err); alert('Error saving sale — check console');
-      }
-    });
-
-    // Render products list (compact)
-    function renderProductsList(){
-      productsList.innerHTML = '';
-      const entries = Object.entries(productsCache).sort((a,b)=>{
-        const aa = a[1]; const bb = b[1]; const sa = (aa.meesho?.totalQuantity||0)+(aa.local?.totalQuantity||0);
-        const sb = (bb.meesho?.totalQuantity||0)+(bb.local?.totalQuantity||0);
-        return sb - sa;
-      });
-      entries.forEach(([slug,prod])=>{
-        const box = document.createElement('div'); box.style.padding='8px'; box.style.borderBottom='1px dashed rgba(255,255,255,0.03)';
-        const title = document.createElement('div'); title.innerHTML = `<strong>${prod.name||slug}</strong>`;
-        const stats = document.createElement('div'); stats.className='muted small';
-        const mQty = prod.meesho?.totalQuantity||0; const mRev = prod.meesho?.totalRevenue||0; const mAvg = prod.meesho?.avgUnitPrice||0;
-        const lQty = prod.local?.totalQuantity||0; const lRev = prod.local?.totalRevenue||0; const lAvg = prod.local?.avgUnitPrice||0;
-        stats.innerHTML = `<span class="platform-meesho">Meesho: ${mQty} @ ${fmt(mAvg)} (${fmt(mRev)})</span> &nbsp; • &nbsp; <span class="platform-local">Local: ${lQty} @ ${fmt(lAvg)} (${fmt(lRev)})</span>`;
-        box.appendChild(title); box.appendChild(stats);
-
-        // expand history on tap
-        box.addEventListener('click', async ()=>{
-          await showHistoryForProduct(slug, prod.name||slug);
-        });
-
-        productsList.appendChild(box);
-      });
-    }
-
-    async function showHistoryForProduct(slug, displayName){
-      // fetch history
-      const histRef = ref(db, `products/${slug}/history`);
-      try{
-        const snap = await get(histRef);
-        const obj = snap.val()||{};
-        const arr = Object.entries(obj).map(([id,rec])=>({id,...rec})).sort((a,b)=> new Date(b.date) - new Date(a.date));
-
-        // Build a modal-like small view (simple prompt)
-        let html = `${displayName}\n\n`; html += 'Date | Type | Qty | Total | Unit\n';
-        arr.forEach(r=>{ html += `${new Date(r.date).toLocaleString()} | ${r.platform} | ${r.quantity} | ${fmt(r.totalAmount)} | ${fmt(r.unitPrice)}\n` });
-        // show in a prompt-like window — because we keep single-file simple
-        alert(html);
-      }catch(e){ console.error(e); alert('Failed to load history') }
-    }
-
-    // Summary across all products
-    function computeSummary(){
-      let totalMeesho = 0, totalLocal = 0; let countMeesho = 0, countLocal = 0;
-      Object.values(productsCache).forEach(p=>{
-        totalMeesho += p.meesho?.totalRevenue||0;
-        totalLocal += p.local?.totalRevenue||0;
-        countMeesho += p.meesho?.totalQuantity||0;
-        countLocal += p.local?.totalQuantity||0;
-      });
-      const avgMeesho = countMeesho? (totalMeesho / countMeesho) : 0;
-      const avgLocal = countLocal? (totalLocal / countLocal) : 0;
-      meeshoRevEl.textContent = fmt(totalMeesho);
-      localRevEl.textContent = fmt(totalLocal);
-      avgDiffEl.textContent = fmt(avgMeesho - avgLocal);
-    }
-
-    // Load initial cache from localStorage if available (quick UX)
-    (function loadLocalCache(){
-      try{ const cached = JSON.parse(localStorage.getItem('prod_cache')||'{}'); if(Object.keys(cached).length) { productsCache = cached; renderProductDatalist(); renderProductsList(); computeSummary(); } }catch(e){}
-    })();
-
-    btnExport.addEventListener('click', async ()=>{
-      // export flattened sales history across products
-      try{
-        const snap = await get(ref(db,'products'));
-        const all = snap.val()||{};
-        const rows = [];
-        Object.entries(all).forEach(([slug,p])=>{
-          const name = p.name||slug;
-          const hist = p.history||{};
-          Object.values(hist).forEach(h=>{
-            rows.push({product:name, platform:h.platform, quantity:h.quantity, totalAmount:h.totalAmount, unitPrice:h.unitPrice, date:h.date});
-          })
-        });
-        if(rows.length===0){ alert('No history to export'); return }
-        const header = Object.keys(rows[0]).join(',') + '\n';
-        const body = rows.map(r=>Object.values(r).map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-        const csv = header + body;
-        const blob = new Blob([csv],{type:'text/csv'});
-        const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download='meesho_sales.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-      }catch(e){ console.error(e); alert('Export failed') }
-    });
-
-    btnRefresh.addEventListener('click', ()=>{ renderProductsList(); computeSummary(); alert('Refreshed UI') });
-    btnClear.addEventListener('click', ()=>{ localStorage.removeItem('prod_cache'); alert('Local cache cleared') });
-
   </script>
 </body>
 </html>
