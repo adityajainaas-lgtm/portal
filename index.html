@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Meesho / Local Sales Profit Tracker</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--muted:#9aa6b2;--accent:#10b981}
+    *{box-sizing:border-box;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial}
+    body{margin:0;background:linear-gradient(180deg,#071023 0%, #071829 100%);color:#e6eef6;padding:20px}
+    .container{max-width:1000px;margin:0 auto}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+    h1{font-size:20px;margin:0}
+    p.lead{margin:4px 0 0;color:var(--muted);font-size:13px}
+    .grid{display:grid;grid-template-columns:1fr 420px;gap:18px}
+    .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+
+    form .row{display:flex;gap:8px;margin-bottom:10px}
+    label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+    input[type=text],input[type=number],select,input[type=date]{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    button{background:var(--accent);border:none;padding:10px 12px;border-radius:8px;color:#042018;cursor:pointer;font-weight:600}
+    .muted{color:var(--muted);font-size:13px}
+    ul{list-style:none;padding:0;margin:0}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;text-align:left;border-bottom:1px dashed rgba(255,255,255,0.03);font-size:13px}
+    .small{font-size:12px;color:var(--muted)}
+    .statrow{display:flex;gap:10px;flex-wrap:wrap}
+    .stat{background:rgba(255,255,255,0.03);padding:10px;border-radius:10px;min-width:120px}
+    .success{background:#052e22;padding:10px;border-radius:8px;color:#8df3c3}
+    .danger{background:#2e0710;padding:6px;border-radius:6px;color:#ffb4b4}
+    .action-row{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:8px}
+    .link-btn{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px;border-radius:8px;color:var(--muted);cursor:pointer}
+    .footer{margin-top:14px;color:var(--muted);font-size:13px}
+    @media(max-width:980px){.grid{grid-template-columns:1fr;}
+    .card{margin-bottom:12px}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>Meesho + Local Sales — Profit & Traceability</h1>
+        <p class="lead">Add each shipped order, see running totals (per product + overall). Saves to Firebase Realtime Database.</p>
+      </div>
+      <div class="small">Ready to push to GitHub • Single-file app</div>
+    </header>
+
+    <div class="grid">
+      <!-- LEFT: form + recent sales -->
+      <div>
+        <div class="card" id="entry-card">
+          <h3 style="margin:0 0 10px 0">Add / Record a Sale</h3>
+          <form id="sale-form">
+            <div>
+              <label>Product name</label>
+              <input list="product-list" id="productName" placeholder="Type product name (autocomplete)" autocomplete="off" required />
+              <datalist id="product-list"></datalist>
+              <div class="small muted">If product doesn't exist it will be added automatically (slug-based dedupe)</div>
+            </div>
+
+            <div class="row">
+              <div style="flex:1">
+                <label>Quantity</label>
+                <input type="number" id="quantity" value="1" min="1" />
+              </div>
+              <div style="flex:1">
+                <label>Platform</label>
+                <select id="platform">
+                  <option>Meesho</option>
+                  <option>Local</option>
+                  <option>Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row">
+              <div style="flex:1">
+                <label>Sale Price (per unit)</label>
+                <input type="number" id="salePrice" step="0.01" placeholder="e.g. 499" />
+              </div>
+              <div style="flex:1">
+                <label>Cost Price (per unit)</label>
+                <input type="number" id="costPrice" step="0.01" placeholder="e.g. 300" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div style="flex:1">
+                <label>Platform fee % (per unit)</label>
+                <input type="number" id="platformFee" step="0.01" placeholder="e.g. 20" />
+              </div>
+              <div style="flex:1">
+                <label>Shipping cost (per unit)</label>
+                <input type="number" id="shippingCost" step="0.01" placeholder="e.g. 40" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div style="flex:1">
+                <label>Other fees (absolute for the whole sale)</label>
+                <input type="number" id="otherFees" step="0.01" placeholder="e.g. 20 (packing, COD charges)" />
+              </div>
+              <div style="flex:1">
+                <label>Date</label>
+                <input type="date" id="saleDate" />
+              </div>
+            </div>
+
+            <div class="action-row">
+              <button type="submit">Record Sale</button>
+              <button type="button" id="exportCSV" class="link-btn">Export CSV</button>
+            </div>
+
+            <div id="message" style="margin-top:10px"></div>
+          </form>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h3 style="margin:0 0 8px 0">Recent Sales</h3>
+          <div id="recent-sales" style="max-height:320px;overflow:auto"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: stats + products -->
+      <aside>
+        <div class="card">
+          <h3 style="margin:0 0 8px 0">Overall</h3>
+          <div class="statrow" id="overall-stats">
+            <div class="stat"><div class="small">Orders</div><div id="stat-orders">0</div></div>
+            <div class="stat"><div class="small">Total Sold (units)</div><div id="stat-units">0</div></div>
+            <div class="stat"><div class="small">Total Profit</div><div id="stat-profit">₹0</div></div>
+          </div>
+          <div style="margin-top:10px" class="small muted">Tip: Set platform fee & shipping while recording sale for accurate profit.</div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h3 style="margin:0 0 8px 0">Products</h3>
+          <div style="max-height:430px;overflow:auto;margin-top:6px">
+            <table id="products-table">
+              <thead>
+                <tr><th>Product</th><th class="small">Sold</th><th class="small">Profit</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h3 style="margin:0 0 8px 0">Quick actions</h3>
+          <div style="display:flex;gap:8px;flex-direction:column">
+            <button id="refreshBtn" class="link-btn">Refresh data</button>
+            <button id="clearLocalCache" class="link-btn">Clear local product cache</button>
+          </div>
+          <div class="footer">Warning: Clearing cache won't delete DB data. To merge product names, use DB console or contact me for a small utility.</div>
+        </div>
+      </aside>
+    </div>
+
+    <footer style="margin-top:16px;" class="small muted">Security note: this example uses client-side Firebase config. Make sure to secure your Realtime Database rules before publishing publicly.</footer>
+  </div>
+
+  <script type="module">
+    // ----- FIREBASE INITIALIZATION -----
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics.js";
+    import {
+      getDatabase,
+      ref,
+      push,
+      set,
+      onValue,
+      update,
+      runTransaction,
+      get,
+      child
+    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
+
+    // --- Replace / verify this config. I used the config you provided earlier. ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyBsMQUXlXv5qQRWGa4ImL48WieON8nsEBA",
+      authDomain: "portal-85f3d.firebaseapp.com",
+      projectId: "portal-85f3d",
+      storageBucket: "portal-85f3d.firebasestorage.app",
+      messagingSenderId: "758294315137",
+      appId: "1:758294315137:web:7d0ccb6a7193eea9228d80",
+      measurementId: "G-YNSJVMPWWP"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    try{ getAnalytics(app); }catch(e){console.warn('Analytics not available',e)}
+    const db = getDatabase(app);
+
+    // ----- UTILITIES -----
+    function slugify(name){
+      return name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+    }
+
+    function fmtMoney(x){
+      return '₹'+(+x).toFixed(2);
+    }
+
+    // Get DOM refs
+    const productInput = document.getElementById('productName');
+    const productDatalist = document.getElementById('product-list');
+    const qtyInput = document.getElementById('quantity');
+    const platformInput = document.getElementById('platform');
+    const salePriceInput = document.getElementById('salePrice');
+    const costPriceInput = document.getElementById('costPrice');
+    const platformFeeInput = document.getElementById('platformFee');
+    const shippingInput = document.getElementById('shippingCost');
+    const otherFeesInput = document.getElementById('otherFees');
+    const saleDateInput = document.getElementById('saleDate');
+    const saleForm = document.getElementById('sale-form');
+    const messageBox = document.getElementById('message');
+    const recentSalesEl = document.getElementById('recent-sales');
+    const productsTableBody = document.querySelector('#products-table tbody');
+    const statOrders = document.getElementById('stat-orders');
+    const statUnits = document.getElementById('stat-units');
+    const statProfit = document.getElementById('stat-profit');
+    const exportCSVBtn = document.getElementById('exportCSV');
+
+    // Local cache for quick autocomplete
+    let localProducts = {}; // slug -> {name, totalSold, totalProfit}
+
+    // Subscribe to products list and update caches
+    const productsRef = ref(db, 'products');
+    onValue(productsRef, (snap) => {
+      const val = snap.val() || {};
+      localProducts = val;
+      refreshDatalist();
+      renderProductsTable();
+      computeOverall();
+    });
+
+    // Subscribe to recent sales (last 100)
+    const salesRef = ref(db, 'sales');
+    onValue(salesRef, (snap) => {
+      const val = snap.val() || {};
+      const arr = Object.entries(val).map(([id,s])=>({id,...s})).sort((a,b)=> (b.createdAt||0)-(a.createdAt||0)).slice(0,100);
+      renderRecentSales(arr);
+      computeOverall();
+    });
+
+    function refreshDatalist(){
+      productDatalist.innerHTML = '';
+      Object.values(localProducts).forEach(p=>{
+        const opt = document.createElement('option'); opt.value = p.name; productDatalist.appendChild(opt);
+      })
+      // also persist to localStorage for tiny offline UX
+      try{localStorage.setItem('product_cache', JSON.stringify(localProducts))}catch(e){}
+    }
+
+    function renderProductsTable(){
+      productsTableBody.innerHTML = '';
+      const rows = Object.values(localProducts).sort((a,b)=> (b.totalSold||0)-(a.totalSold||0));
+      rows.forEach(p=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${p.name}</td><td>${p.totalSold||0}</td><td>${fmtMoney(p.totalProfit||0)}</td>`;
+        productsTableBody.appendChild(tr);
+      })
+    }
+
+    function renderRecentSales(arr){
+      recentSalesEl.innerHTML = '';
+      if(arr.length===0){ recentSalesEl.innerHTML = '<div class="small muted">No sales recorded yet</div>'; return }
+      const table = document.createElement('table');
+      table.innerHTML = `<thead><tr><th>When</th><th>Product</th><th>Qty</th><th>Platform</th><th>Profit</th></tr></thead>`;
+      const tb = document.createElement('tbody');
+      arr.forEach(s=>{
+        const tr = document.createElement('tr');
+        const when = new Date(s.date || s.createdAt || Date.now()).toLocaleString();
+        tr.innerHTML = `<td class="small">${when}</td><td>${s.productName}</td><td>${s.quantity}</td><td class="small">${s.platform}</td><td>${fmtMoney(s.profit||0)}</td>`;
+        tb.appendChild(tr);
+      });
+      table.appendChild(tb);
+      recentSalesEl.appendChild(table);
+    }
+
+    function computeOverall(){
+      // compute from products cache and sales count
+      const products = Object.values(localProducts);
+      const totalUnits = products.reduce((s,p)=>(s+(p.totalSold||0)),0);
+      const totalProfit = products.reduce((s,p)=>(s+(p.totalProfit||0)),0);
+
+      // Count orders approx from sales snapshot
+      get(ref(db,'sales')).then(snap=>{
+        const salesObj = snap.val()||{};
+        const orders = Object.keys(salesObj).length;
+        statOrders.textContent = orders;
+        statUnits.textContent = totalUnits;
+        statProfit.textContent = fmtMoney(totalProfit);
+      }).catch(e=>{
+        statOrders.textContent = '-'; statUnits.textContent = totalUnits; statProfit.textContent = fmtMoney(totalProfit);
+      })
+    }
+
+    saleForm.addEventListener('submit', async (ev)=>{
+      ev.preventDefault();
+      const rawName = productInput.value.trim();
+      if(!rawName){showMessage('Please enter a product name',true);return}
+      const slug = slugify(rawName);
+      const quantity = Math.max(1,parseInt(qtyInput.value||1));
+      const platform = platformInput.value || 'Meesho';
+      const salePrice = parseFloat(salePriceInput.value||0);
+      const costPrice = parseFloat(costPriceInput.value||0);
+      const platformFeePct = parseFloat(platformFeeInput.value||0);
+      const shippingPerUnit = parseFloat(shippingInput.value||0);
+      const otherFees = parseFloat(otherFeesInput.value||0);
+      const dateStr = saleDateInput.value;
+      const date = dateStr ? new Date(dateStr).toISOString() : new Date().toISOString();
+
+      // compute profit
+      const feePerUnit = salePrice * (platformFeePct/100);
+      const profitPerUnit = salePrice - costPrice - feePerUnit - shippingPerUnit;
+      const totalProfit = (profitPerUnit * quantity) - otherFees;
+      const saleTotal = salePrice * quantity;
+
+      const now = Date.now();
+      const saleData = {
+        productSlug: slug,
+        productName: rawName,
+        quantity,
+        platform,
+        salePricePerUnit: salePrice,
+        costPricePerUnit: costPrice,
+        platformFeePct,
+        shippingPerUnit,
+        otherFees,
+        profit: +totalProfit,
+        totalSaleValue: +saleTotal,
+        date,
+        createdAt: now
+      };
+
+      try{
+        // push sale
+        const newSaleRef = push(ref(db,'sales'));
+        await set(newSaleRef, saleData);
+
+        // atomic update to product totals - this avoids race conditions
+        const productRef = ref(db, `products/${slug}`);
+        await runTransaction(productRef, (current)=>{
+          if(current===null){
+            return {
+              name: rawName,
+              slug,
+              createdAt: now,
+              totalSold: quantity,
+              totalProfit: totalProfit,
+              lastSoldAt: now
+            }
+          } else {
+            current.name = current.name || rawName;
+            current.totalSold = (current.totalSold||0) + quantity;
+            current.totalProfit = (current.totalProfit||0) + totalProfit;
+            current.lastSoldAt = now;
+            return current;
+          }
+        });
+
+        showMessage('Sale recorded successfully', false);
+        saleForm.reset();
+        qtyInput.value = 1; // reset default
+        // keep focus
+        productInput.focus();
+
+      }catch(err){
+        console.error(err);
+        showMessage('Error saving sale — check console and your Firebase rules', true);
+      }
+    });
+
+    function showMessage(msg, isError){
+      messageBox.innerHTML = '';
+      const div = document.createElement('div');
+      div.className = isError ? 'danger' : 'success';
+      div.textContent = msg;
+      messageBox.appendChild(div);
+      setTimeout(()=>{ if(messageBox.contains(div)) messageBox.removeChild(div)}, 4000);
+    }
+
+    // Export CSV of sales (simple)
+    exportCSVBtn.addEventListener('click', async ()=>{
+      try{
+        const snap = await get(ref(db,'sales'));
+        const obj = snap.val()||{};
+        const rows = Object.values(obj).map(s=>({
+          date: s.date || new Date(s.createdAt||0).toISOString(),
+          product: s.productName,
+          qty: s.quantity,
+          platform: s.platform,
+          sale_value: s.totalSaleValue,
+          profit: s.profit
+        }));
+        if(rows.length===0){showMessage('No sales to export', true); return}
+        const header = Object.keys(rows[0]).join(',') + '\n';
+        const body = rows.map(r=>Object.values(r).map(v=>`"${String(v).replace(/"/g,'""') }"`).join(',')).join('\n');
+        const csv = header + body;
+        const blob = new Blob([csv],{type:'text/csv'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'sales_export.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        showMessage('CSV exported', false);
+      }catch(e){console.error(e); showMessage('Export failed — check console', true)}
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', ()=>{ refreshDatalist(); showMessage('Refreshed local UI', false); });
+    document.getElementById('clearLocalCache').addEventListener('click', ()=>{ localStorage.removeItem('product_cache'); showMessage('Local cache cleared; DB unaffected', false); });
+
+    // Try to prefill product list from localStorage for instant UX
+    (function loadLocalCache(){
+      try{
+        const cached = JSON.parse(localStorage.getItem('product_cache')||'{}');
+        if(Object.keys(cached).length && Object.keys(localProducts).length===0){ localProducts = cached; refreshDatalist(); renderProductsTable(); }
+      }catch(e){}
+    })();
+
+  </script>
+</body>
+</html>
